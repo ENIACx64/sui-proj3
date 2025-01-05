@@ -14,7 +14,7 @@
 #include "search-strategies.h"
 #include "memusage.h"
 
-#define MEMORY_LIMIT 50000
+#define MEMORY_LIMIT 50000000
 
 typedef std::shared_ptr<SearchState> SharedPtr;
 
