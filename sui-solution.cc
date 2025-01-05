@@ -8,7 +8,9 @@
 #include <queue>
 #include <stack>
 #include <set>
+#include <unordered_set>
 #include <map>
+#include <unordered_map>
 #include <algorithm>
 
 #include "search-strategies.h"
@@ -21,6 +23,11 @@ typedef std::shared_ptr<SearchState> SharedPtr;
 bool memoryLimitExceeded(size_t limit)
 {
 	return (getCurrentRSS() > limit - MEMORY_LIMIT);
+}
+
+size_t hash(const SearchState &state)
+{
+	// TODO
 }
 
 // returns the path
