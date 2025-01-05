@@ -26,11 +26,6 @@ bool memoryLimitExceeded(size_t limit)
 	return (getCurrentRSS() > limit - MEMORY_LIMIT);
 }
 
-size_t hash(const SearchState &state)
-{
-	// TODO
-}
-
 struct StateCost {
     SharedPtr state;
 	SearchAction action;
@@ -290,4 +285,8 @@ std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
 	}
 
     return {}; // If no path found
+}
+
+bool operator==(const SearchState &lhs, const SearchState &rhs) {
+    return lhs.state_ == rhs.state_;
 }
