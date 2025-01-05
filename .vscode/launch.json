@@ -7,7 +7,7 @@
       "request": "launch",
       "preLaunchTask": "run the makefile",
       "program": "${workspaceFolder}/fc-sui",
-      "args": ["10", "42"],
+      "args": ["20", "42", "--solver", "bfs", "--easy-mode", "28"],
       "stopAtEntry": false,
       "cwd": "${fileDirname}",
       "environment": [],
