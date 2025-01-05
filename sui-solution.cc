@@ -13,6 +13,7 @@
 
 #include "search-strategies.h"
 #include "memusage.h"
+#include "search-interface.h"
 
 #define MEMORY_LIMIT 50000000
 
@@ -24,13 +25,20 @@ bool memoryLimitExceeded(size_t limit)
 }
 
 struct StateCost {
-    SearchState state;
-    double g_score;  // Cost from start node to this node
-    double f_score;  // Estimated cost from start to goal through this node
+    SharedPtr state;
+	SearchAction action;
+    double g_score;
+    double f_score;
 
-    // Comparator that compares the f_score for priority queue (min-heap)
     bool operator>(const StateCost& other) const {
         return this->f_score > other.f_score;
+    }
+};
+
+class CompareStateCost {
+public:
+    bool operator()(const StateCost& lhs, const StateCost& rhs) const {
+        return lhs.f_score > rhs.f_score; // Min-heap
     }
 };
 
@@ -201,42 +209,78 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
-        std::priority_queue<StateCost, std::vector<StateCost>, std::greater<StateCost>> open_set;
+	// initial declarations
+	std::queue<SharedPtr> open;
+	std::set<SharedPtr> explored;
+	std::map<SharedPtr, std::pair<SearchAction, SharedPtr>> parent_map;
+	std::priority_queue<StateCost, std::vector<StateCost>, std::greater<StateCost>> open_set;
 
-		std::set<SharedPtr> explored;
-		std::map<SharedPtr, std::pair<SearchAction, SharedPtr>> parent_map;
+	SharedPtr init = std::make_shared<SearchState>(init_state);
+  	open.push(init);
 
-		if (init_state.isFinal())
+	if (init_state.isFinal())
+	{
+		return {};
+	}
+		
+	// while queue is not empty
+	while (!open.empty())
+	{
+		SharedPtr currentState = open.front();
+		open.pop();
+
+		// preventing duplicates
+		if (explored.find(currentState) != explored.end())
 		{
-			return {};
+			continue;
 		}
-			
-		SharedPtr init = std::make_shared<SearchState>(init_state);
-		std::vector<SearchAction> currentStateActions = init_state.actions();
+
+		// marking current state as explored
+		explored.insert(currentState);
+
+		std::vector<SearchAction> currentStateActions = currentState->actions();
+		
 		for (SearchAction action : currentStateActions)
 		{
-			SearchState nextState = action.execute(init_state);
+			// checking memory limit
+			if (memoryLimitExceeded(mem_limit_))
+			{
+				fprintf(stderr, "Memory limit exceeded. Aborting.\n");
+				return {};
+			}
 
-			StateCost initial = 
+			SearchState childState = action.execute(*currentState);
+			SharedPtr nextState = std::make_shared<SearchState>(childState);
+
+			// checking for final state
+			if (nextState->isFinal())
+			{
+				return ReturnPath(currentState, action, parent_map);
+			}
+
+			StateCost childStateCost = 
 			{
 				nextState,
+				action,
 				0,
-				compute_heuristic(nextState, StudentHeuristic())
+				compute_heuristic(childState, StudentHeuristic())
 			};
-			open_set.push(initial);
+
+			open_set.push(childStateCost);
 		}
 
+		StateCost cheapestChildState = open_set.top();
+		open_set.pop();
 
-		StateCost top = open_set.top();
-		if (top.state.isFinal())
+		if (explored.find(cheapestChildState.state) == explored.end())
 		{
-			return {};
+			open.push(cheapestChildState.state);
+			std::pair<SearchAction, SharedPtr> newPair(
+				cheapestChildState.action, 
+				cheapestChildState.state);
+			parent_map.insert_or_assign(cheapestChildState.state, newPair);
 		}
-			
-		std::vector<SearchAction> currentStateActions1 = top.state.actions();
-		SharedPtr stateToInsert = std::make_shared<SearchState>(init_state);
-		// std::pair<SearchAction, SharedPtr> newPair(action, currentState);
-		// parent_map.insert_or_assign(stateToInsert, newPair);
+	}
 
-        return {};  // Return empty if no solution found
+    return {}; // If no path found
 }
