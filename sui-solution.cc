@@ -148,7 +148,8 @@ std::vector<SearchAction> DepthFirstSearch::solve(const SearchState &init_state)
 		// checking the depth limit
 		if (depth >= depth_limit_)
 		{
-			// TODO
+			// skip the iteration
+			continue;
 		}
 
 		std::vector<SearchAction> currentStateActions = currentState->actions();
