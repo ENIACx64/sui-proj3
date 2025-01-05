@@ -22,6 +22,17 @@ bool memoryLimitExceeded(size_t limit)
 	return (getCurrentRSS() > limit - MEMORY_LIMIT);
 }
 
+struct StateCost {
+    SearchState state;
+    double g_score;  // Cost from start node to this node
+    double f_score;  // Estimated cost from start to goal through this node
+
+    // Comparator that compares the f_score for priority queue (min-heap)
+    bool operator>(const StateCost& other) const {
+        return this->f_score > other.f_score;
+    }
+};
+
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 	// initial declarations
 	std::queue<SharedPtr> open;
@@ -119,5 +130,42 @@ double StudentHeuristic::distanceLowerBound(const GameState &state) const {
 }
 
 std::vector<SearchAction> AStarSearch::solve(const SearchState &init_state) {
-	return {};
+        std::priority_queue<StateCost, std::vector<StateCost>, std::greater<StateCost>> open_set;
+
+		std::set<SharedPtr> explored;
+		std::map<SharedPtr, std::pair<SearchAction, SharedPtr>> parent_map;
+
+		if (init_state.isFinal())
+		{
+			return {};
+		}
+			
+		SharedPtr init = std::make_shared<SearchState>(init_state);
+		std::vector<SearchAction> currentStateActions = init_state.actions();
+		for (SearchAction action : currentStateActions)
+		{
+			SearchState nextState = action.execute(init_state);
+
+			StateCost initial = 
+			{
+				nextState,
+				0,
+				compute_heuristic(nextState, StudentHeuristic())
+			};
+			open_set.push(initial);
+		}
+
+
+		StateCost top = open_set.top();
+		if (top.state.isFinal())
+		{
+			return {};
+		}
+			
+		std::vector<SearchAction> currentStateActions1 = top.state.actions();
+		SharedPtr stateToInsert = std::make_shared<SearchState>(init_state);
+		// std::pair<SearchAction, SharedPtr> newPair(action, currentState);
+		// parent_map.insert_or_assign(stateToInsert, newPair);
+
+        return {};  // Return empty if no solution found
 }
