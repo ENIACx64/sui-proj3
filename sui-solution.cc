@@ -4,19 +4,29 @@
  * 
  */
 
+#include <vector>
 #include <queue>
 #include <set>
-#include <unordered_map>
+#include <map>
 #include <algorithm>
+
 #include "search-strategies.h"
+#include "memusage.h"
+
+#define MEMORY_LIMIT 50000
 
 typedef std::shared_ptr<SearchState> SharedPtr;
+
+bool memoryLimitExceeded(size_t limit)
+{
+	return (getCurrentRSS() > limit - MEMORY_LIMIT);
+}
 
 std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_state) {
 	// initial declarations
 	std::queue<SharedPtr> open;
 	std::set<SharedPtr> explored;
-	std::unordered_map<SharedPtr, std::pair<SearchAction, SharedPtr>> parent_map;
+	std::map<SharedPtr, std::pair<SearchAction, SharedPtr>> parent_map;
 
 	// pushing initial state into queue
 	SharedPtr init = std::make_shared<SearchState>(init_state);
@@ -48,6 +58,13 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
 		
 		for (SearchAction action : currentStateActions)
 		{
+			// checking memory limit
+			if (memoryLimitExceeded(mem_limit_))
+			{
+				fprintf(stderr, "Memory limit exceeded. Aborting.\n");
+				return {};
+			}
+
 			SharedPtr nextState = std::make_shared<SearchState>(action.execute(*currentState));
 
 			// checking for final state
@@ -79,6 +96,14 @@ std::vector<SearchAction> BreadthFirstSearch::solve(const SearchState &init_stat
                 std::reverse(path.begin(), path.end());
                 return path;
 			}
+
+			// preventing duplicates and marking state
+            if (explored.find(nextState) == explored.end())
+			{
+                open.push(nextState);
+				std::pair<SearchAction, SharedPtr> newPair(action, currentState);
+                parent_map.insert_or_assign(nextState, newPair);
+            }
 		}
 	}
 
